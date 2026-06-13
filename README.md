@@ -2,6 +2,8 @@
 
 A learning project implementing an **API Gateway pattern** in Python using FastAPI. The gateway acts as a single entry point that handles authentication, rate limiting, and request routing to backend microservices.
 
+> Built with Python 3.10, FastAPI, and JWT authentication.
+
 ---
 
 ## What We Built
