@@ -1,0 +1,10 @@
+# API Gateway Project — pinned dependencies
+# Pinning exact versions makes builds reproducible: the same versions install
+# on your machine, a teammate's machine, and inside a Docker container.
+
+fastapi==0.136.3
+uvicorn==0.49.0
+httpx==0.28.1
+PyJWT==2.13.0
+slowapi==0.1.9
+pydantic==2.13.4

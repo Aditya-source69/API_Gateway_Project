@@ -29,7 +29,7 @@ Client
     :3001         Service   Service
                   :3002     :3003
 
-Auth Service runs separately at :8001
+Auth Service :3004 (login is routed through the gateway like every other service)
 ```
 
 ### Files
@@ -101,7 +101,7 @@ pip install fastapi uvicorn httpx pyjwt slowapi
 uvicorn gateway.main:app --port 8000 --reload
 
 # Terminal 2 — Auth Service
-uvicorn services.auth_service:app --port 8001 --reload
+uvicorn services.auth_service:app --port 3004 --reload
 
 # Terminal 3 — User Service
 uvicorn services.user_service:app --port 3001 --reload
@@ -162,5 +162,4 @@ curl http://localhost:8000/users \
 - **Fake user DB** — hardcoded dict in auth_service.py; real apps use a database with hashed passwords
 - **Hardcoded SECRET_KEY** in auth_service.py — real apps load from environment variables
 - **Hardcoded service URLs** — real systems use service discovery (Consul, Kubernetes DNS, etc.)
-- **No request body forwarding** — the gateway currently doesn't stream the request body to downstream services
 - **Single gateway instance** — production would run multiple instances behind a load balancer

@@ -2,11 +2,16 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import jwt
 import datetime
+import os
 
 app = FastAPI(title="Auth Service")
 
-# ── Secret key (in real apps, store this in environment variables) ──
-SECRET_KEY = "your-super-secret-key"
+# ── Secret key ──
+# Read from the environment so the gateway and this service share the SAME
+# key. The default is for local dev only; in Docker/production we inject a
+# real secret via an environment variable (12-factor config).
+# IMPORTANT: this default MUST match the gateway's default in gateway/main.py.
+SECRET_KEY = os.environ.get("SECRET_KEY", "fallback-only-for-local-dev-32chars!!")
 
 # ── Fake user database ──
 FAKE_USERS = {

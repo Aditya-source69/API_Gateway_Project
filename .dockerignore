@@ -1,0 +1,23 @@
+# Keep the build context small and the image clean.
+# Anything listed here is NOT sent to Docker or copied by "COPY . .".
+
+# Virtual environments — these are your machine's, rebuilt inside the image
+venv/
+.venv/
+
+# Python caches and compiled files
+__pycache__/
+*.pyc
+*.pyo
+
+# Runtime logs — generated inside the container, shouldn't be baked in
+gateway/gateway.log
+
+# Git and editor noise
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Local secrets must never end up in an image
+.env

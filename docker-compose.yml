@@ -1,0 +1,54 @@
+# docker-compose.yml — runs the whole system with ONE command:
+#   docker compose up --build
+#
+# Compose creates a private network and puts every service on it. Each service
+# is reachable from the others by its name (e.g. http://user-service:3001).
+# Only the gateway publishes a port to your host machine.
+
+services:
+
+  # ── Backend microservices (internal only — no host ports) ──────────
+  user-service:
+    build: .                         # build the image from the Dockerfile here
+    image: apigw:latest              # tag it; the others reuse this same image
+    command: uvicorn services.user_service:app --host 0.0.0.0 --port 3001
+
+  order-service:
+    build: .
+    image: apigw:latest
+    command: uvicorn services.order_service:app --host 0.0.0.0 --port 3002
+
+  payment-service:
+    build: .
+    image: apigw:latest
+    command: uvicorn services.payment_service:app --host 0.0.0.0 --port 3003
+
+  auth-service:
+    build: .
+    image: apigw:latest
+    command: uvicorn services.auth_service:app --host 0.0.0.0 --port 3004
+    environment:
+      # auth SIGNS tokens with this key...
+      - SECRET_KEY=${SECRET_KEY:-fallback-only-for-local-dev-32chars!!}
+
+  # ── The gateway — the ONLY thing exposed to the outside world ───────
+  gateway:
+    build: .
+    image: apigw:latest
+    command: uvicorn gateway.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"                  # host:container — reach it at localhost:8000
+    environment:
+      # ...and the gateway VERIFIES with the same key. They MUST match.
+      - SECRET_KEY=${SECRET_KEY:-fallback-only-for-local-dev-32chars!!}
+      # Point the gateway at the other containers by their service names.
+      # This is Docker's built-in DNS — the simplest form of service discovery.
+      - USER_SERVICE_URL=http://user-service:3001
+      - ORDER_SERVICE_URL=http://order-service:3002
+      - PAYMENT_SERVICE_URL=http://payment-service:3003
+      - AUTH_SERVICE_URL=http://auth-service:3004
+    depends_on:                      # start backends before the gateway
+      - user-service
+      - order-service
+      - payment-service
+      - auth-service
