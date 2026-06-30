@@ -1,0 +1,4 @@
+# Development / test dependencies — NOT needed to run the app, only to test it.
+# Keeping these separate from requirements.txt keeps the production image lean.
+# (httpx is already in requirements.txt; TestClient uses it under the hood.)
+pytest==8.3.4
