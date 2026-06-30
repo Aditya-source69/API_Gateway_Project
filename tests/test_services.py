@@ -37,7 +37,7 @@ def test_order_health():
 def test_orders_list_has_three():
     r = order_client.get("/orders")
     assert r.status_code == 200
-    assert len(r.json()["orders"]) == 5
+    assert len(r.json()["orders"]) == 3
 
 def test_payment_health():
     r = payment_client.get("/health")
