@@ -1,0 +1,71 @@
+# ============================================================================
+# gateway — the front door. Reads SECRET_KEY from the Secret and points at the
+# other services by their Service names (Kubernetes DNS), exactly mirroring the
+# environment block from your docker-compose.yml.
+# ============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  labels:
+    app: gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      containers:
+        - name: gateway
+          image: apigw:latest
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: "100m"        # asks for 0.1 CPU core — the HPA's baseline
+            limits:
+              cpu: "300m"        # hard ceiling so one pod can't hog the node
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          command: ["uvicorn", "gateway.main:app", "--host", "0.0.0.0", "--port", "8000"]
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SECRET_KEY            # must match auth-service -> from the Secret
+              valueFrom:
+                secretKeyRef:
+                  name: gateway-secret
+                  key: SECRET_KEY
+            # Point at the other Services by name (in-cluster DNS):
+            - name: USER_SERVICE_URL
+              value: "http://user-service:3001"
+            - name: ORDER_SERVICE_URL
+              value: "http://order-service:3002"
+            - name: PAYMENT_SERVICE_URL
+              value: "http://payment-service:3003"
+            - name: AUTH_SERVICE_URL
+              value: "http://auth-service:3004"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+spec:
+  selector:
+    app: gateway
+  ports:
+    - port: 8000
+      targetPort: 8000

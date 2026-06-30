@@ -1,7 +1,7 @@
 # API Gateway Project — Learning Progress & DevOps Roadmap
 
 > A living document tracking what we're building, why, and where we're headed.
-> **Last updated:** June 14, 2026
+> **Last updated:** June 28, 2026
 
 ---
 
@@ -99,6 +99,9 @@ api-gateway-project/
 - Windows PowerShell quirks (`New-Item` instead of `touch`, one `mkdir` per command, venv activation, quoting paths with spaces)
 - **Docker**: images vs containers, the Dockerfile, layer caching (copy requirements first), `--host 0.0.0.0` inside containers, `.dockerignore`
 - **Docker Compose**: one command for the whole system, service-name DNS (containers reach each other by name, not `localhost`), exposing only the gateway port, injecting secrets/config via environment variables (12-factor config)
+- **YAML from scratch**: key:value (space after colon!), lists, indentation = ownership, spaces never tabs, case-sensitive keys; "valid YAML" vs "valid Kubernetes" are different things
+- **Kubernetes core**: cluster/node/pod/Deployment/Service; the 4-key manifest skeleton (apiVersion, kind, metadata, spec); labels + selectors as the glue; Deployments give self-healing/scaling (bare Pods don't); Services give stable DNS in front of changing pods; Secrets for shared config; `kubectl apply/get/logs/delete`, `kubectl explain`, `kubectl port-forward`, `minikube image load`; whole API gateway deployed to minikube and tested end-to-end
+- **Kubernetes intermediate**: `/health` endpoints + liveness/readiness probes (liveness=restart, readiness=remove from traffic); rolling updates protect against bad deploys (readiness gates the cutover — lived through a failed deploy and recovered); building images into minikube's own Docker daemon (`minikube docker-env`); Ingress + NGINX Ingress Controller for a real URL (`apigw.local` via `minikube tunnel` + hosts entry); HPA autoscaling on CPU (needs metrics-server + CPU requests), watched it scale gateway 1→2 under load, understands the scale-up-fast/scale-down-slow (anti-flapping) behavior and the replica math
 
 ---
 
@@ -123,8 +126,8 @@ This gateway project is the foundation. Here's the full 6-phase DevOps journey i
 | Phase | Focus | Status |
 |---|---|---|
 | **Phase 1** | **Docker** — containerize the FastAPI services | ✅ Done |
-| **Phase 2** | **Kubernetes core** (minikube — pods, deployments, services) | ⬜ Not started |
-| **Phase 3** | **Kubernetes intermediate** (Ingress, probes, HPA autoscaling) | ⬜ Not started |
+| **Phase 2** | **Kubernetes core** (minikube — pods, deployments, services) | ✅ Done |
+| **Phase 3** | **Kubernetes intermediate** (Ingress, probes, HPA autoscaling) | ✅ Done |
 | **Phase 4** | **CI/CD** with GitLab CI (build → test → deploy pipelines) | ⬜ Not started |
 | **Phase 5** | **Terraform + AWS** (infrastructure as code) | ⬜ Not started |
 | **Phase 6** | **Observability** (Prometheus + Grafana) + CKA exam prep | ⬜ Not started |
@@ -184,3 +187,37 @@ uvicorn gateway.main:app --port 8000 --reload
 - ⬜ Next big step: Docker
 
 *Not bad at all for someone who hadn't touched FastAPI before starting this.*
+
+---
+
+## 9. Weekly Build Review Log
+
+### Week ending Sun, June 28, 2026
+
+**What happened this week — a huge build week.** Last week's milestone was modest: one Deployment + one Service reached via `kubectl port-forward`. Adi blew past it and shipped **all of Kubernetes core AND intermediate** in a single week. Concretely:
+
+- A full `k8s/` directory with **9 hand-written manifests**: `gateway.yaml` (Deployment + Service), the 4 backend services, `secret.yaml`, `ingress.yaml`, `hpa.yaml`.
+- **Probes on every Deployment** — `/health` endpoints added to the gateway and all 4 services, wired to liveness + readiness probes.
+- **Ingress + NGINX Ingress Controller** — a real URL (`apigw.local`) replacing `port-forward`, via `minikube tunnel` + a hosts entry.
+- **HorizontalPodAutoscaler** scaling the gateway on CPU (1→2 watched live under load); understands the `ceil(replicas × currentCPU ÷ targetCPU)` math and the scale-up-fast/down-slow anti-flapping behavior.
+- **Real debugging under fire**: diagnosed a stale-image bug (pods ran cached `:latest`) and fixed it with `minikube docker-env` → rebuild → `kubectl rollout restart`; and lived through a *failed* rolling deploy where the **readiness probe kept the old pods serving** — saw zero-downtime protection work for real.
+- Wrote `PHASE3-NOTES.md` — a genuinely good CKA-style cheat-sheet (concepts, command reference, debugging order, challenges & lessons).
+
+**Honest status:** This is real, well-above-pace progress. Roadmap Phase 2 (K8s core) and Phase 3 (K8s intermediate) are both **Done** — verified against actual manifests and notes, not just claims. He is now ready to start **Phase 4 — CI/CD**.
+
+**Still owed from the daily quizzes (carry-over, not blockers):** JWT **tamper-evidence** (editing `exp` breaks the signature → 401; it *oscillates*, not durably locked) and **Host header value-naming** (say both concrete values aloud). Spot-check these, don't re-teach from scratch.
+
+**Milestone set for next week:** Build his **first CI/CD pipeline** — a GitLab CI `.gitlab-ci.yml` that runs on every push: lint → test → build the Docker image. (Steps in the review message.)
+
+**To measure against next week:** Does a `.gitlab-ci.yml` exist and has a pipeline actually *run green* on GitLab? Can he explain what a runner is, what a stage vs a job is, and why CI builds the image instead of his laptop? Did he add at least one real test that the pipeline executes?
+
+### Week ending Sun, June 21, 2026
+
+**What happened this week:** A strong run of *conceptual* sessions that deliberately bridge toward Kubernetes — but no hands-on K8s build yet. Topics covered: async/concurrency, authn vs authz, HTTP status codes, the Host header & reverse-proxy header rewriting, JWT internals, **networking (ports / localhost / DNS)** as the explicit K8s on-ramp, and rate limiting internals. Two long-standing misconceptions got **locked**: `await` frees the loop (not blocks it), and "every 4xx is the caller's fault, whichever box emits it." `401 vs 403` also locked.
+
+**Honest status:** No `k8s/` manifests, no minikube cluster, no `kubectl` commands run yet. The roadmap doc previously implied Phase 2 was underway; in reality the groundwork (networking/DNS mental model) is laid and the hands-on part is the next step. That's exactly where a self-taught learner *should* be before writing first YAML — but the building hasn't started.
+
+**Milestone set for next week:** Deploy the existing gateway image to a local minikube cluster — one Deployment + one Service, reachable via `kubectl port-forward`. (Steps in the review message.)
+
+**To measure against next week:** Does `kubectl get pods` show a Running gateway pod? Can he reach `/` (or a service) through the Service? Can he explain Pod vs Deployment vs Service in his own words, and debug one CrashLoopBackOff?
+

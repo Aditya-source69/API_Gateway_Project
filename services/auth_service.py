@@ -24,6 +24,10 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 @app.post("/auth/login")
 def login(request: LoginRequest):
 

@@ -1,0 +1,54 @@
+# auth-service — same pattern, port 3004, PLUS it reads SECRET_KEY from the Secret.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  labels:
+    app: auth-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+        - name: auth-service
+          image: apigw:latest
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3004
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3004
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          command: ["uvicorn", "services.auth_service:app", "--host", "0.0.0.0", "--port", "3004"]
+          ports:
+            - containerPort: 3004
+          env:
+            # Pull SECRET_KEY out of the "gateway-secret" Secret, key "SECRET_KEY".
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: gateway-secret
+                  key: SECRET_KEY
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+spec:
+  selector:
+    app: auth-service
+  ports:
+    - port: 3004
+      targetPort: 3004

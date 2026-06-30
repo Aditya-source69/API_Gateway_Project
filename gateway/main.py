@@ -65,6 +65,10 @@ def verify_token(token: str):
         return None
     except jwt.InvalidTokenError:
         return None
+    
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 # ── Main gateway route ─────────────────────────────────────────
 # Catch-all: capture the ENTIRE path, then split off the first segment

@@ -1,0 +1,56 @@
+# ============================================================================
+# user-service: a Deployment (runs the pods) + a Service (stable address).
+# This single file translates ONE block of your docker-compose.yml.
+# The "---" line separates two YAML documents in one file.
+# ============================================================================
+
+apiVersion: apps/v1            # which API group/version this object belongs to
+kind: Deployment               # WHAT this object is: a Deployment
+metadata:
+  name: user-service           # the Deployment's name
+  labels:
+    app: user-service          # a label (key=value tag) we attach to it
+spec:                          # the desired state we want Kubernetes to keep
+  replicas: 1                  # "always keep 1 copy of this pod running"
+  selector:
+    matchLabels:
+      app: user-service        # this Deployment manages pods with THIS label
+  template:                    # the blueprint for the pods it creates
+    metadata:
+      labels:
+        app: user-service      # pods get this label (must match selector above)
+    spec:
+      containers:
+        - name: user-service
+          image: apigw:latest          # the image you already built
+          imagePullPolicy: IfNotPresent # use the local image; don't try a registry
+          livenessProbe:
+            httpGet:
+              path: /health      # the URL K8s calls
+              port: 3001         # the port the container listens on
+            initialDelaySeconds: 5   # wait 5s after start before first check
+            periodSeconds: 10        # then check every 10s
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          # Same command idea as in docker-compose.yml, as a YAML list:
+          command: ["uvicorn", "services.user_service:app", "--host", "0.0.0.0", "--port", "3001"]
+          ports:
+            - containerPort: 3001       # the port the app listens on inside the pod
+
+---
+apiVersion: v1                 # core API group
+kind: Service                  # WHAT this is: a Service (stable network endpoint)
+metadata:
+  name: user-service           # IMPORTANT: this name becomes the DNS hostname.
+                               # Other pods reach it at http://user-service:3001
+                               # — exactly like Compose's service-name DNS.
+spec:
+  selector:
+    app: user-service          # send traffic to pods carrying this label
+  ports:
+    - port: 3001               # the port the Service exposes inside the cluster
+      targetPort: 3001         # the port on the pod to forward to

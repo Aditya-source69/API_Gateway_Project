@@ -1,0 +1,23 @@
+# ============================================================================
+# Ingress: a cluster-level routing RULE that maps an outside URL to a Service.
+# It replaces "kubectl port-forward" with a real, always-on address.
+# A separate component (the Ingress Controller) reads this rule and does the
+# actual routing — we install it via "minikube addons enable ingress".
+# ============================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: apigw-ingress
+spec:
+  ingressClassName: nginx        # which Ingress Controller handles this rule (NGINX)
+  rules:
+    - host: apigw.local          # the hostname users will hit
+      http:
+        paths:
+          - path: /              # match every path under that host...
+            pathType: Prefix     # "Prefix" = everything starting with "/"
+            backend:
+              service:
+                name: gateway    # ...and send it to your gateway Service
+                port:
+                  number: 8000   # on port 8000

@@ -1,0 +1,24 @@
+# ============================================================================
+# HorizontalPodAutoscaler: automatically changes the gateway's replica count
+# based on CPU load. It needs two things to work:
+#   1. metrics-server running (so it can read live CPU usage)
+#   2. a CPU "request" on the target pods (the baseline it measures against)
+# ============================================================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: gateway-hpa
+spec:
+  scaleTargetRef:            # WHICH workload to scale
+    apiVersion: apps/v1
+    kind: Deployment
+    name: gateway
+  minReplicas: 1             # never go below 1 pod
+  maxReplicas: 5             # never go above 5 pods
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50   # add pods when avg CPU > 50% of the request
