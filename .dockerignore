@@ -21,3 +21,6 @@ gateway/gateway.log
 
 # Local secrets must never end up in an image
 .env
+
+# Terraform — provider binaries & state must never ship inside the app image
+terraform/
