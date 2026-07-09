@@ -37,7 +37,11 @@ app = FastAPI(title="API Gateway", lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-SECRET_KEY = os.environ.get("SECRET_KEY", "fallback-only-for-local-dev-32chars!!")
+# Require the secret from the environment — NO hardcoded fallback in the repo.
+# Provided locally via .env, in Docker via compose env, in K8s via a Secret.
+SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY environment variable is required and is not set.")
 
 # ── Service registry ───────────────────────────────────────────
 # Maps the first path segment to a backend base URL.

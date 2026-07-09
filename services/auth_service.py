@@ -7,11 +7,12 @@ import os
 app = FastAPI(title="Auth Service")
 
 # ── Secret key ──
-# Read from the environment so the gateway and this service share the SAME
-# key. The default is for local dev only; in Docker/production we inject a
-# real secret via an environment variable (12-factor config).
-# IMPORTANT: this default MUST match the gateway's default in gateway/main.py.
-SECRET_KEY = os.environ.get("SECRET_KEY", "fallback-only-for-local-dev-32chars!!")
+# Required from the environment — NO hardcoded fallback in the repo. The gateway
+# and this service must be given the SAME key (via .env / compose / K8s Secret)
+# so tokens signed here verify at the gateway.
+SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY environment variable is required and is not set.")
 
 # ── Fake user database ──
 FAKE_USERS = {

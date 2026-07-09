@@ -29,7 +29,7 @@ services:
     command: uvicorn services.auth_service:app --host 0.0.0.0 --port 3004
     environment:
       # auth SIGNS tokens with this key...
-      - SECRET_KEY=${SECRET_KEY:-fallback-only-for-local-dev-32chars!!}
+      - SECRET_KEY=${SECRET_KEY:?set SECRET_KEY in your .env file}
 
   # ── The gateway — the ONLY thing exposed to the outside world ───────
   gateway:
@@ -40,7 +40,7 @@ services:
       - "8000:8000"                  # host:container — reach it at localhost:8000
     environment:
       # ...and the gateway VERIFIES with the same key. They MUST match.
-      - SECRET_KEY=${SECRET_KEY:-fallback-only-for-local-dev-32chars!!}
+      - SECRET_KEY=${SECRET_KEY:?set SECRET_KEY in your .env file}
       # Point the gateway at the other containers by their service names.
       # This is Docker's built-in DNS — the simplest form of service discovery.
       - USER_SERVICE_URL=http://user-service:3001
