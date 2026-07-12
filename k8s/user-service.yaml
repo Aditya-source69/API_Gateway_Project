@@ -24,6 +24,22 @@ spec:                          # the desired state we want Kubernetes to keep
         - name: user-service
           image: apigw:latest          # the image you already built
           imagePullPolicy: IfNotPresent # use the local image; don't try a registry
+          # ── Security hardening (Phase 2 DevSecOps) ──
+          securityContext:
+            runAsNonRoot: true              # K8s refuses to start the pod if it would run as root
+            runAsUser: 10001                # the "appuser" we created in the Dockerfile
+            allowPrivilegeEscalation: false # process can never gain MORE privileges than it starts with
+            capabilities:
+              drop:
+                - ALL                       # strip every Linux kernel capability (none needed to serve HTTP)
+          # ── Resource governance: requests = guaranteed, limits = hard ceiling ──
+          resources:
+            requests:                       # what the pod is guaranteed (used for scheduling)
+              cpu: "50m"                    # 50 millicores = 0.05 CPU
+              memory: "64Mi"
+            limits:                         # hard cap — container is throttled/killed if it exceeds
+              cpu: "200m"
+              memory: "128Mi"
           livenessProbe:
             httpGet:
               path: /health      # the URL K8s calls

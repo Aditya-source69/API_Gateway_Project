@@ -19,6 +19,22 @@ spec:
         - name: auth-service
           image: apigw:latest
           imagePullPolicy: IfNotPresent
+          # ── Security hardening (Phase 2 DevSecOps) ──
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          # ── Resource governance: requests = guaranteed, limits = hard ceiling ──
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
           livenessProbe:
             httpGet:
               path: /health

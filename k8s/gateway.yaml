@@ -23,11 +23,22 @@ spec:
         - name: gateway
           image: apigw:latest
           imagePullPolicy: IfNotPresent
+          # ── Security hardening (Phase 2 DevSecOps) ──
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          # ── Resource governance (cpu already tuned for the HPA; added memory) ──
           resources:
             requests:
-              cpu: "100m"        # asks for 0.1 CPU core — the HPA's baseline
+              cpu: "100m"        # HPA baseline
+              memory: "64Mi"
             limits:
               cpu: "300m"        # hard ceiling so one pod can't hog the node
+              memory: "256Mi"
           livenessProbe:
             httpGet:
               path: /health
