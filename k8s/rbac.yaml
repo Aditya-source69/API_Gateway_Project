@@ -1,0 +1,40 @@
+# ============================================================================
+# RBAC demo: a READ-ONLY identity for pods.
+# Three objects — an identity (ServiceAccount), a permission set (Role), and
+# the glue that connects them (RoleBinding). Least privilege in action.
+# ============================================================================
+
+# 1. The IDENTITY ("who"). A badge for a process. Grants nothing on its own.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: readonly-sa
+  namespace: default
+
+---
+# 2. The PERMISSIONS ("what"). A job description: may only READ pods.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default
+  name: pod-reader
+rules:
+  - apiGroups: [""]                 # "" = the core API group (pods live here)
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"] # read-only — note: NO "delete", NO "create"
+
+---
+# 3. The GLUE. Assigns the pod-reader Role to the readonly-sa identity.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: readonly-sa-pod-reader
+  namespace: default
+subjects:                           # WHO gets the permissions
+  - kind: ServiceAccount
+    name: readonly-sa
+    namespace: default
+roleRef:                            # WHICH Role they get
+  kind: Role
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io

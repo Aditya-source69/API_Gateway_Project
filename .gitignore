@@ -4,3 +4,11 @@ __pycache__/
 *.pyc
 *.log
 .env
+
+# Terraform
+.terraform/          # downloaded provider plugins (huge)
+*.tfstate            # state file — can contain secrets, never commit
+*.tfstate.*          # state backups
+*.tfvars             # variable files that may hold secrets
+
+k8s/secret.yaml
