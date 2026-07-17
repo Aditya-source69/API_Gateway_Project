@@ -51,9 +51,10 @@ jobs:
 
   # ── SECRET DETECTION: scan the REPO for leaked credentials ────────────────
   # Catches e.g. an API key or password accidentally committed.
+  # Promoted from report-mode to a HARD GATE: a real leaked secret now fails the
+  # pipeline. Known/reviewed findings are allowlisted in .gitleaksignore.
   secret-scan:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         with:
