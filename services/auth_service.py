@@ -46,4 +46,4 @@ def login(request: LoginRequest):
     }
     token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
-    return {"access_token": token, "token_type": "bearer"}
+    return {"access_token": token, "token_type": "bearer"}  # nosec B105 - "bearer" is the OAuth token-type label, not a password
